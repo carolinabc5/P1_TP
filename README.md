@@ -23,13 +23,6 @@ O sistema está dividido em quatro módulos fundamentais, utilizando estruturas 
 * **Controlo de Versões:** Git (Repositório com commits regulares para evidenciar o progresso do desenvolvimento)
 * **Bibliotecas padrão:** `stdio.h`, `stdlib.h`, `string.h`, `time.h`.
 
-## Atividades Extra e Melhorias
-Para valorização da nota final, foram implementadas as seguintes melhorias:
-* **Gestão de Memória Dinâmica:** Implementação robusta de funções de libertação de memória (`libertar_lista`, `limpar_fila`) para evitar *memory leaks*.
-* **Interface de Utilizador (CLI) otimizada:** Estrutura de menus simplificada para uma leitura clara (uma opção por linha).
-* **Robustez de Entrada:** Utilização de `fgets` e `strcspn` para evitar erros comuns de leitura de dados.
-* **Automação:** Geração automática de alertas integrados no processo de carga de dados da API.
-
 ## Compilação e Execução
 Para compilar o projeto, assegura-te de ter todos os ficheiros (`.c` e `.h`) na mesma pasta e utiliza o terminal:
 
