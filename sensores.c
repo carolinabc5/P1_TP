@@ -16,8 +16,24 @@ void inserir_sensor(Sensor** inicio, Sensor* novo) {
     }
 }
 
-// Lê o ficheiro de texto (Módulo 1) e guarda na Lista Ligada[cite: 1]
+// Liberta a memória da lista (corrigida)
+void libertar_lista(Sensor* inicio) {
+    Sensor* atual = inicio;
+    while (atual != NULL) {
+        Sensor* proximo = atual->proximo;
+        free(atual);
+        atual = proximo;
+    }
+}
+
+// Lê o ficheiro de texto e guarda na Lista Ligada[cite: 1]
 int carregar_sensores_txt(Sensor** inicio, const char* nome_ficheiro) {
+    // IMPORTANTE: Limpa a lista anterior antes de carregar nova informação
+    if (*inicio != NULL) {
+        libertar_lista(*inicio);
+        *inicio = NULL;
+    }
+
     FILE* ficheiro = fopen(nome_ficheiro, "r");
     if (ficheiro == NULL) return 0;
 
@@ -69,6 +85,10 @@ int carregar_sensores_txt(Sensor** inicio, const char* nome_ficheiro) {
 
 // Listar todas as leituras disponíveis[cite: 1]
 void listar_sensores(Sensor* inicio) {
+    if (inicio == NULL) {
+        printf("A lista esta vazia.\n");
+        return;
+    }
     Sensor* atual = inicio;
     printf("\n--- TODAS AS LEITURAS ---\n");
     while (atual != NULL) {
@@ -82,27 +102,22 @@ void listar_sensores(Sensor* inicio) {
 void pesquisar_sensor_codigo(Sensor* inicio, const char* codigo) {
     Sensor* atual = inicio;
     int encontrado = 0;
-    
     printf("\n--- PESQUISA POR CODIGO: %s ---\n", codigo);
     while (atual != NULL) {
         if (strcmp(atual->codigo, codigo) == 0) {
-            printf("Data: %s | Descricao: %s | Valor: %.2f %s | Estado: %s | Mensagem: %s\n",
+            printf("Data: %s | Desc: %s | Valor: %.2f %s | Estado: %s | Msg: %s\n",
                    atual->data_hora, atual->descricao, atual->valor, atual->unidade, atual->estado, atual->mensagem);
             encontrado = 1;
         }
         atual = atual->proximo;
     }
-    
-    if (!encontrado) {
-        printf("Nenhum sensor encontrado com o codigo '%s'.\n", codigo);
-    }
+    if (!encontrado) printf("Nenhum sensor encontrado.\n");
 }
 
 // Listar sensores por estado[cite: 1]
 void listar_sensores_estado(Sensor* inicio, const char* estado) {
     Sensor* atual = inicio;
     int contador = 0;
-    
     printf("\n--- SENSORES COM ESTADO: %s ---\n", estado);
     while (atual != NULL) {
         if (strcmp(atual->estado, estado) == 0) {
@@ -112,17 +127,13 @@ void listar_sensores_estado(Sensor* inicio, const char* estado) {
         }
         atual = atual->proximo;
     }
-    
-    if (contador == 0) {
-        printf("Nenhum sensor encontrado com o estado '%s'.\n", estado);
-    }
+    if (contador == 0) printf("Nenhum sensor encontrado com esse estado.\n");
 }
 
 // Listar sensores por tipo[cite: 1]
 void listar_sensores_tipo(Sensor* inicio, const char* tipo) {
     Sensor* atual = inicio;
     int contador = 0;
-    
     printf("\n--- SENSORES DO TIPO: %s ---\n", tipo);
     while (atual != NULL) {
         if (strcmp(atual->tipo, tipo) == 0) {
@@ -132,56 +143,41 @@ void listar_sensores_tipo(Sensor* inicio, const char* tipo) {
         }
         atual = atual->proximo;
     }
-    
-    if (contador == 0) {
-        printf("Nenhum sensor encontrado do tipo '%s'.\n", tipo);
-    }
+    if (contador == 0) printf("Nenhum sensor encontrado desse tipo.\n");
 }
 
-// Guardar e carregar as leituras através de um ficheiro binário[cite: 1]
+// Guardar binário[cite: 1]
 void guardar_sensores_binario(Sensor* inicio, const char* nome_ficheiro) {
     FILE *ficheiro = fopen(nome_ficheiro, "wb");
-    if (ficheiro == NULL) {
-        printf("Erro ao criar o ficheiro binario.\n");
-        return;
-    }
+    if (ficheiro == NULL) return;
 
     Sensor* atual = inicio;
-    int contador = 0;
     while (atual != NULL) {
-        // Grava o nó atual no ficheiro binário
-        fwrite(atual, sizeof(Sensor), 1, ficheiro);
+        // Grava excluindo o ponteiro 'proximo'
+        fwrite(atual, sizeof(Sensor) - sizeof(Sensor*), 1, ficheiro);
         atual = atual->proximo;
-        contador++;
     }
-    
     fclose(ficheiro);
-    printf("Sucesso! %d sensores gravados em '%s'.\n", contador, nome_ficheiro);
+    printf("Dados gravados em '%s'.\n", nome_ficheiro);
 }
 
+// Carregar binário[cite: 1]
 Sensor* carregar_sensores_binario(const char* nome_ficheiro) {
     FILE *ficheiro = fopen(nome_ficheiro, "rb");
-    if (ficheiro == NULL) {
-        printf("Aviso: Ficheiro binario '%s' nao encontrado.\n", nome_ficheiro);
-        return NULL;
-    }
+    if (ficheiro == NULL) return NULL;
 
     Sensor* inicio = NULL;
-    Sensor temp; // Variável temporária para ler os dados do ficheiro
-    int contador = 0;
-
-    // Lê os blocos de dados do ficheiro, um a um
-    while (fread(&temp, sizeof(Sensor), 1, ficheiro) == 1) {
+    while (1) {
         Sensor* novo = (Sensor*)malloc(sizeof(Sensor));
-        if (novo != NULL) {
-            *novo = temp;          // Copia os dados do ficheiro
-            novo->proximo = NULL;  // Ignora o ponteiro de memória antigo
+        if (fread(novo, sizeof(Sensor) - sizeof(Sensor*), 1, ficheiro) == 1) {
+            novo->proximo = NULL; 
             inserir_sensor(&inicio, novo);
-            contador++;
+        } else {
+            free(novo);
+            break;
         }
     }
-    
     fclose(ficheiro);
-    printf("Sucesso! %d sensores carregados de '%s'.\n", contador, nome_ficheiro);
+    printf("Dados carregados do ficheiro binario.\n");
     return inicio;
 }
